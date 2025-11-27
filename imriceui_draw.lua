@@ -36,13 +36,13 @@ local function AddRectFilled(draw_list, color, p_min, p_max)
     AddDrawCmd(draw_list, surface.DrawRect, p_min.x, p_min.y, p_max.x - p_min.x, p_max.y - p_min.y)
 end
 
-local function AddRectOutline(draw_list, color, x, y, w, h, thickness)
+local function AddRectOutline(draw_list, color, p_min, p_max, thickness)
     AddDrawCmd(draw_list, surface.SetDrawColor, color)
-    AddDrawCmd(draw_list, surface.DrawOutlinedRect, x, y, w, h, thickness)
+    AddDrawCmd(draw_list, surface.DrawOutlinedRect, p_min.x, p_min.y, p_max.x - p_min.x, p_max.y - p_min.y, thickness)
 end
 
-local function AddText(draw_list, text, font, x, y, color)
-    AddDrawCmd(draw_list, surface.SetTextPos, x, y)
+local function AddText(draw_list, text, font, pos, color) -- TODO: unify pos param type, simplify vec ops
+    AddDrawCmd(draw_list, surface.SetTextPos, pos.x, pos.y)
     AddDrawCmd(draw_list, surface.SetFont, font)
     AddDrawCmd(draw_list, surface.SetTextColor, color)
     AddDrawCmd(draw_list, surface.DrawText, text)
@@ -60,16 +60,16 @@ local function AddTriangleFilled(draw_list, indices, color)
     AddDrawCmd(draw_list, surface.DrawPoly, indices)
 end
 
-local function RenderTextClipped(draw_list, text, font, x, y, color, w, h)
+local function RenderTextClipped(draw_list, text, font, pos, color, w, h)
     surface.SetFont(font)
     local text_width, text_height = surface.GetTextSize(text)
     local need_clipping = text_width > w or text_height > h
 
     if need_clipping then
-        AddDrawCmd(draw_list, render.SetScissorRect, x, y, x + w, y + h, true)
+        AddDrawCmd(draw_list, render.SetScissorRect, pos.x, pos.y, pos.x + w, pos.y + h, true)
     end
 
-    AddText(draw_list, text, font, x, y, color)
+    AddText(draw_list, text, font, pos, color)
 
     if need_clipping then
         AddDrawCmd(draw_list, render.SetScissorRect, 0, 0, 0, 0, false)

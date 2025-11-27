@@ -726,35 +726,34 @@ end
 -- end
 
 --- static ImVec2 CalcWindowSizeAfterConstraint
-local function CalcWindowSizeAfterConstraint(window, size_desired)
-    return {
-        w = ImMax(size_desired.w, GImRiceUI.Style.WindowMinSize.x),
-        h = ImMax(size_desired.h, GImRiceUI.Style.WindowMinSize.y)
-    }
+local function CalcWindowSizeAfterConstraint(window, size_desired) -- TODO: finish
+    return ImVec2(
+        ImMax(size_desired.x, GImRiceUI.Style.WindowMinSize.x),
+        ImMax(size_desired.y, GImRiceUI.Style.WindowMinSize.y)
+    )
 end
 
 --- static void CalcResizePosSizeFromAnyCorner
 local function CalcResizePosSizeFromAnyCorner(window, corner_target, corner_pos)
-    local pos_min = {
-        x = ImLerp(corner_target.x, window.Pos.x, corner_pos.x),
-        y = ImLerp(corner_target.y, window.Pos.y, corner_pos.y)
-    }
-    local pos_max = {
-        x = ImLerp(window.Pos.x + window.Size.x, corner_target.x, corner_pos.x),
-        y = ImLerp(window.Pos.y + window.Size.y, corner_target.y, corner_pos.y)
-    }
-    local size_expected = {
-        w = pos_max.x - pos_min.x,
-        h = pos_max.y - pos_min.y
-    }
+    local pos_min = ImVec2(
+        ImLerp(corner_target.x, window.Pos.x, corner_pos.x),
+        ImLerp(corner_target.y, window.Pos.y, corner_pos.y)
+    )
+    local pos_max = ImVec2(
+        ImLerp(window.Pos.x + window.Size.x, corner_target.x, corner_pos.x),
+        ImLerp(window.Pos.y + window.Size.y, corner_target.y, corner_pos.y)
+    )
+    local size_expected = pos_max - pos_min
+
     local size_constrained = CalcWindowSizeAfterConstraint(window, size_expected)
 
-    local out_pos = {x = pos_min.x, y = pos_min.y}
+    local out_pos = ImVec2(pos_min.x, pos_min.y)
+
     if corner_pos.x == 0 then
-        out_pos.x = out_pos.x - (size_constrained.w - size_expected.w)
+        out_pos.x = out_pos.x - (size_constrained.x - size_expected.x)
     end
     if corner_pos.y == 0 then
-        out_pos.y = out_pos.y - (size_constrained.h - size_expected.h)
+        out_pos.y = out_pos.y - (size_constrained.y - size_expected.y)
     end
 
     return out_pos, size_constrained
@@ -768,8 +767,8 @@ local function UpdateWindowManualResize(window)
 
     PushID("#RESIZE")
 
-    local pos_target = {x = INF, y = INF}
-    local size_target = {w = INF, h = INF}
+    local pos_target = ImVec2(INF, INF)
+    local size_target = ImVec2(INF, INF)
 
     local resize_grip_colors = {}
     for i = 1, #ImResizeGripDef do
@@ -837,14 +836,14 @@ local function UpdateWindowManualResize(window)
         resize_grip_colors[i] = grip_color
     end
 
-    if size_target.w ~= INF and (window.Size.x ~= size_target.w or window.SizeFull.x ~= size_target.w) then
-        window.Size.x = size_target.w
-        window.SizeFull.x = size_target.w
+    if size_target.x ~= INF and (window.Size.x ~= size_target.x or window.SizeFull.x ~= size_target.x) then
+        window.Size.x = size_target.x
+        window.SizeFull.x = size_target.x
     end
 
-    if size_target.h ~= INF and (window.Size.y ~= size_target.h or window.SizeFull.y ~= size_target.h) then
-        window.Size.y = size_target.h
-        window.SizeFull.y = size_target.h
+    if size_target.y ~= INF and (window.Size.y ~= size_target.y or window.SizeFull.y ~= size_target.y) then
+        window.Size.y = size_target.y
+        window.SizeFull.y = size_target.y
     end
 
     if pos_target.x ~= INF and window.Pos.x ~= ImFloor(pos_target.x) then
@@ -933,8 +932,8 @@ local function RenderWindowDecorations(window, titlebar_is_highlight, resize_gri
             ImVec2(window.Pos.x + border_width, window.Pos.y + border_width),
             ImVec2(window.Pos.x + window.Size.x - border_width, window.Pos.y + window.TitleBarHeight - border_width))
         AddRectOutline(window.DrawList, g.Style.Colors.Border,
-            window.Pos.x, window.Pos.y,
-            window.Size.x, window.TitleBarHeight, border_width)
+            window.Pos,
+            ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.TitleBarHeight, border_width))
     else
         AddRectFilled(window.DrawList, title_color,
             ImVec2(window.Pos.x + border_width, window.Pos.y + border_width),
@@ -949,24 +948,21 @@ local function RenderWindowDecorations(window, titlebar_is_highlight, resize_gri
             local corner_pos = ImResizeGripDef[i].CornerPos
             local inner_dir = ImResizeGripDef[i].InnerDir
 
-            local corner = {
-                x = window.Pos.x + corner_pos.x * window.Size.x,
-                y = window.Pos.y + corner_pos.y * window.Size.y
-            }
+            local corner = window.Pos + corner_pos * window.Size
 
             local padding = border_width * 1.3
             local grip_indices -- TODO: this is hard to maintain
             if inner_dir.x == -1 and inner_dir.y == -1 then
                 grip_indices = {
-                    {x = corner.x + padding * inner_dir.x, y = corner.y + padding * inner_dir.y}, -- Bottom-right corner
-                    {x = corner.x - resize_grip_draw_size - padding, y = corner.y - padding}, -- Left
-                    {x = corner.x + padding * inner_dir.x, y = corner.y - resize_grip_draw_size - padding} -- Up
+                    corner + padding * inner_dir, -- Bottom-right corner
+                    ImVec2(corner.x - resize_grip_draw_size - padding, corner.y - padding), -- Left
+                    ImVec2(corner.x + padding * inner_dir.x, corner.y - resize_grip_draw_size - padding) -- Up
                 }
             elseif inner_dir.x  == 1 and inner_dir.y == -1 then
                 grip_indices = {
-                    {x = corner.x + padding * inner_dir.x, y = corner.y + padding * inner_dir.y}, -- Bottom-left corner
-                    {x = corner.x + padding * inner_dir.x, y = corner.y - resize_grip_draw_size - padding}, -- Up
-                    {x = corner.x + resize_grip_draw_size + padding, y = corner.y - padding} -- Right
+                    corner + padding * inner_dir, -- Bottom-left corner
+                    ImVec2(corner.x + padding * inner_dir.x, corner.y - resize_grip_draw_size - padding), -- Up
+                    ImVec2(corner.x + resize_grip_draw_size + padding, corner.y - padding) -- Right
                 }
             end
 
@@ -975,8 +971,8 @@ local function RenderWindowDecorations(window, titlebar_is_highlight, resize_gri
 
         -- RenderWindowOuterBorders?
         AddRectOutline(window.DrawList, g.Style.Colors.Border,
-            window.Pos.x, window.Pos.y,
-            window.Size.x, window.Size.y, border_width)
+            window.Pos,
+            ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.Size.y, border_width))
     end
 end
 
@@ -1007,7 +1003,7 @@ local function RenderWindowTitleBarContents(window)
     local _, text_h = surface.GetTextSize(window.Name)
     local text_clip_width = window.Size.x - window.TitleBarHeight - close_button_size - collapse_button_size
     RenderTextClipped(window.DrawList, window.Name, g.Font,
-        window.Pos.x + window.TitleBarHeight, window.Pos.y + (window.TitleBarHeight - text_h) / 1.3,
+        ImVec2(window.Pos.x + window.TitleBarHeight, window.Pos.y + (window.TitleBarHeight - text_h) / 1.3),
         g.Style.Colors.Text,
         text_clip_width, window.Size.y)
 end
@@ -1190,7 +1186,7 @@ local function FindHoveredWindow()
         if window and window.Open then
             x, y, w, h = window.Pos.x, window.Pos.y, window.Size.x, window.Size.y
 
-            local hit = IsMouseHoveringRect(window.Pos, ImVec2(window.Pos.x + window.Size.x, window.Pos.y + window.Size.y))
+            local hit = IsMouseHoveringRect(window.Pos, window.Pos + window.Size)
 
             if hit and GImRiceUI.HoveredWindow == nil then
                 GImRiceUI.HoveredWindow = window
@@ -1266,7 +1262,7 @@ local function NewFrame()
 
     if (g.ActiveID ~= 0 and g.ActiveIDIsAlive ~= g.ActiveID and g.ActiveIDPreviousFrame == g.ActiveID) then
         print("NewFrame(): ClearActiveID() because it isn't marked alive anymore!\n");
-        --FIXME: ActiveIDIsAlive is nil?
+
         ClearActiveID()
     end
 

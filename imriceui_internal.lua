@@ -96,7 +96,9 @@ function ImVec2:__sub(other)
 end
 
 function ImVec2:__mul(other)
-    if isnumber(other) then
+    if isnumber(self) then
+        return _ImVec2(self * other.x, self * other.y)
+    elseif isnumber(other) then
         return _ImVec2(self.x * other, self.y * other)
     else
         return _ImVec2(self.x * other.x, self.y * other.y)
