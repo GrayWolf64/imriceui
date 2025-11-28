@@ -6,6 +6,7 @@ local remove_at = table.remove
 local insert_at = table.insert
 
 local ipairs = ipairs
+local assert = assert
 
 local ScrW = ScrW
 local ScrH = ScrH
@@ -106,10 +107,7 @@ local function ImHashStr(str)
         hash = bit_band(hash * FNV_PRIME, 0xFFFFFFFF)
     end
 
-    -- FIXME: is this possible?
-    -- if hash == 0 then
-
-    -- end
+    assert(hash ~= 0, "ImHash = 0!")
 
     return hash
 end
@@ -1292,7 +1290,7 @@ local function NewFrame()
     g.HoveredWindow = nil
 
     if (g.ActiveID ~= 0 and g.ActiveIDIsAlive ~= g.ActiveID and g.ActiveIDPreviousFrame == g.ActiveID) then
-        print("NewFrame(): ClearActiveID() because it isn't marked alive anymore!\n");
+        print("NewFrame(): ClearActiveID() because it isn't marked alive anymore!")
 
         ClearActiveID()
     end
