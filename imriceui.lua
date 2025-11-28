@@ -36,7 +36,10 @@ local ImResizeGripDef = {
 local GDummyPanel = GDummyPanel or nil
 
 local function SetupDummyPanel()
-    if IsValid(GDummyPanel) then return end
+    if IsValid(GDummyPanel) then
+        GDummyPanel:Remove()
+        GDummyPanel = nil
+    end
 
     GDummyPanel = vgui.Create("DFrame")
 
@@ -425,12 +428,13 @@ local function CreateContext()
         GImRiceUI.FramerateSecPerFrame[i] = 0
     end
 
-    hook.Add("PostGamemodeLoaded", "ImGDummyWindow", function()
-        SetupDummyPanel()
-    end)
-
     return GImRiceUI
 end
+
+--- void ImGui::DestroyContext
+-- local function DestroyContext()
+
+-- end
 
 local function CreateNewWindow(name)
     local g = GImRiceUI
@@ -1300,7 +1304,6 @@ local function NewFrame()
     UpdateMouseMovingWindowNewFrame()
 end
 
---- TODO: FrameRate
 local function EndFrame()
     local g = GImRiceUI
 
@@ -1316,6 +1319,16 @@ local ImRiceUI_ImplGMOD_Data = ImRiceUI_ImplGMOD_Data or { -- TODO: polish
     Time = 0
 }
 
+local function ImRiceUI_ImplGMOD_Init()
+    hook.Add("PostGamemodeLoaded", "ImGDummyWindow", function()
+        SetupDummyPanel()
+    end)
+end
+
+local function ImRiceUI_ImplGMOD_Shutdown()
+    hook.Remove("PostGamemodeLoaded", "ImGDummyWindow")
+end
+
 local function ImRiceUI_ImplGMOD_NewFrame()
     local io = GImRiceUI.IO
 
@@ -1327,7 +1340,9 @@ end
 
 --- void ImGui::Shutdown()
 
--- test here
+--- TEST HERE:
+
+ImRiceUI_ImplGMOD_Init()
 
 CreateContext()
 
