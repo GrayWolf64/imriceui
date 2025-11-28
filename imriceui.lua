@@ -461,6 +461,8 @@ local function CreateNewWindow(name)
         Open = true,
         Collapsed = false,
 
+        SkipItems = false,
+
         --- struct ImDrawList
         DrawList = {
             CmdBuffer = {},

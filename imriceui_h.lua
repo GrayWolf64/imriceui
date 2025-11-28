@@ -56,3 +56,24 @@ local ImGuiItemFlags_ = {
     AutoClosePopups   = bit.lshift(1, 4),
     AllowDuplicateID  = bit.lshift(1, 5)
 }
+
+local ImGuiItemStatusFlags_ = {
+    None             = 0,
+    HoveredRect      = bit.lshift(1, 0),
+    HasDisplayRect   = bit.lshift(1, 1),
+    Edited           = bit.lshift(1, 2),
+    ToggledSelection = bit.lshift(1, 3),
+    ToggledOpen      = bit.lshift(1, 4),
+    HasDeactivated   = bit.lshift(1, 5),
+    Deactivated      = bit.lshift(1, 6),
+    HoveredWindow    = bit.lshift(1, 7),
+    Visible          = bit.lshift(1, 8),
+    HasClipRect      = bit.lshift(1, 9),
+    HasShortcut      = bit.lshift(1, 10)
+}
+
+-- ImGuiItemStatusFlags_.Openable  = bit.lshift(1, 20)
+-- ImGuiItemStatusFlags_.Opened    = bit.lshift(1, 21)
+-- ImGuiItemStatusFlags_.Checkable = bit.lshift(1, 22)
+-- ImGuiItemStatusFlags_.Checked   = bit.lshift(1, 23)
+-- ImGuiItemStatusFlags_.Inputable = bit.lshift(1, 24)
