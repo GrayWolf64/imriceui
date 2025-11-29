@@ -113,6 +113,45 @@ function ImVec2:delete()
 
 end
 
+--- struct ImVec4
+local ImVec4 = {}
+ImVec4.__index = ImVec4
+
+local function _ImVec4(x, y, z, w)
+    return setmetatable({
+        x = x or 0,
+        y = y or 0,
+        z = z or 0,
+        w = w or 0
+    }, ImVec4)
+end
+
+function ImVec4:__add(other)
+    return _ImVec4(self.x + other.x, self.y + other.y, self.z + other.z, self.w + other.w)
+end
+
+function ImVec4:__sub(other)
+    return _ImVec4(self.x - other.x, self.y - other.y, self.z - other.z, self.w - other.w)
+end
+
+function ImVec4:__mul(other)
+    if isnumber(self) then
+        return _ImVec4(self * other.x, self * other.y, self * other.z, self * other.w)
+    elseif isnumber(other) then
+        return _ImVec4(self.x * other, self.y * other, self.z * other, self.w * other)
+    else
+        return _ImVec4(self.x * other.x, self.y * other.y, self.z * other.z, self.w * other.w)
+    end
+end
+
+function ImVec4:__eq(other)
+    return self.x == other.x and self.y == other.y and self.z == other.z and self.w == other.w
+end
+
+function ImVec4:delete()
+
+end
+
 --- struct IMGUI_API ImRect
 local ImRect = {}
 ImRect.__index = ImRect
@@ -150,4 +189,4 @@ local function _ImRect(min, max)
     }, ImRect)
 end
 
-return _ImVector, _ImVec2, _ImRect
+return _ImVector, _ImVec2, _ImVec4, _ImRect

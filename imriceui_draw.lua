@@ -2,6 +2,8 @@ local surface = surface
 local render  = render
 local draw    = draw
 
+local ImVector, ImVec2, ImVec4, ImRect = include("imriceui_internal.lua")
+
 local function ParseImGuiCol(str)
     local r, g, b, a = str:match("ImVec4%(([%d%.]+)f?, ([%d%.]+)f?, ([%d%.]+)f?, ([%d%.]+)f?%)")
     return {r = tonumber(r) * 255, g = tonumber(g) * 255, b = tonumber(b) * 255, a = tonumber(a) * 255}
@@ -41,7 +43,7 @@ local function AddRectOutline(draw_list, color, p_min, p_max, thickness)
     AddDrawCmd(draw_list, surface.DrawOutlinedRect, p_min.x, p_min.y, p_max.x - p_min.x, p_max.y - p_min.y, thickness)
 end
 
-local function AddText(draw_list, text, font, pos, color) -- TODO: unify pos param type, simplify vec ops
+local function AddText(draw_list, text, font, pos, color)
     AddDrawCmd(draw_list, surface.SetTextPos, pos.x, pos.y)
     AddDrawCmd(draw_list, surface.SetFont, font)
     AddDrawCmd(draw_list, surface.SetTextColor, color)
@@ -77,7 +79,7 @@ local function RenderTextClipped(draw_list, text, font, pos, color, w, h)
 end
 
 local function PushClipRect(draw_list, cr_min, cr_max, intersect_with_current_clip_rect)
-    local cr = {x = cr_min.x, y = cr_min.y, z = cr_max.x, w = cr_max.y} -- TODO: ImVec4!
+    local cr = ImVec4(cr_min.x, cr_min.y, cr_max.x, cr_max.y)
 
     if intersect_with_current_clip_rect then
         local current = draw_list._CmdHeader.ClipRect

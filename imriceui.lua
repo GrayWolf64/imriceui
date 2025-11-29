@@ -26,7 +26,7 @@ local ImDir_Down  = 3
 local IM_FONT_SIZE_MIN = 4
 local IM_FONT_SIZE_MAX = 255
 
-local ImVector, ImVec2, ImRect = include("imriceui_internal.lua")
+local ImVector, ImVec2, ImVec4, ImRect = include("imriceui_internal.lua")
 
 local ImResizeGripDef = {
     {CornerPos = ImVec2(1, 1), InnerDir = ImVec2(-1, -1)}, -- Bottom right grip
