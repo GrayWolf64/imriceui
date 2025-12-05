@@ -186,6 +186,8 @@ end
 
 --- void ImGui::UpdateCurrentFontSize
 local function UpdateCurrentFontSize(restore_font_size_after_scaling)
+    local g = GImRiceUI
+
     local final_size
     if restore_font_size_after_scaling > 0 then
         final_size = restore_font_size_after_scaling
@@ -194,57 +196,63 @@ local function UpdateCurrentFontSize(restore_font_size_after_scaling)
     end
 
     if final_size == 0 then
-        final_size = GImRiceUI.FontSizeBase
+        final_size = g.FontSizeBase
 
-        final_size = final_size * GImRiceUI.Style.FontScaleMain
+        final_size = final_size * g.Style.FontScaleMain
     end
 
     -- Again, due to gmod font system limitation
     final_size = ImRound(final_size)
     final_size = ImClamp(final_size, IM_FONT_SIZE_MIN, IM_FONT_SIZE_MAX)
 
-    GImRiceUI.FontSize = final_size
+    g.FontSize = final_size
 
-    local font_data_new = FontCopy(ImFontAtlas.Fonts[GImRiceUI.Font])
+    local font_data_new = FontCopy(ImFontAtlas.Fonts[g.Font])
 
     font_data_new.size = final_size
 
     local font_new = ImFontAtlas:AddFont(font_data_new)
-    GImRiceUI.Font = font_new
+    g.Font = font_new
 end
 
 --- void ImGui::SetCurrentFont
 local function SetCurrentFont(font_name, font_size_before_scaling, font_size_after_scaling)
-    GImRiceUI.Font = font_name
-    GImRiceUI.FontSizeBase = font_size_before_scaling
+    local g = GImRiceUI
+
+    g.Font = font_name
+    g.FontSizeBase = font_size_before_scaling
     UpdateCurrentFontSize(font_size_after_scaling) -- TODO: investigate
 end
 
 local function PushFont(font_name, font_size_base) -- FIXME: checks not implemented?
+    local g = GImRiceUI
+
     if not font_name or font_name == "" then
-        font_name = GImRiceUI.Font
+        font_name = g.Font
     end
 
-    GImRiceUI.FontStack:push_back({
+    g.FontStack:push_back({
         Font = font_name,
-        FontSizeBeforeScaling = GImRiceUI.FontSizeBase,
-        FontSizeAfterScaling = GImRiceUI.FontSize
+        FontSizeBeforeScaling = g.FontSizeBase,
+        FontSizeAfterScaling = g.FontSize
     })
 
     if font_size_base == 0 then
-        font_size_base = GImRiceUI.FontSizeBase
+        font_size_base = g.FontSizeBase
     end
 
     SetCurrentFont(font_name, font_size_base, 0)
 end
 
 local function PopFont()
-    if GImRiceUI.FontStack:size() == 0 then return end
+    local g = GImRiceUI
 
-    local font_stack_data = GImRiceUI.FontStack:peek()
+    if g.FontStack:size() == 0 then return end
+
+    local font_stack_data = g.FontStack:peek()
     SetCurrentFont(font_stack_data.Font, font_stack_data.FontSizeBeforeScaling, font_stack_data.FontSizeAfterScaling)
 
-    GImRiceUI.FontStack:pop_back()
+    g.FontStack:pop_back()
 end
 
 local function GetDefaultFont() -- FIXME: fix impl
@@ -256,17 +264,19 @@ end
 
 --- void ImGui::UpdateFontsNewFrame
 local function UpdateFontsNewFrame() -- TODO: investigate
-    GImRiceUI.Font = GetDefaultFont()
+    local g = GImRiceUI
+
+    g.Font = GetDefaultFont()
 
     local font_stack_data  = {
-        Font = GImRiceUI.Font,
-        FontSizeBeforeScaling = GImRiceUI.Style.FontSizeBase,
-        FontSizeAfterScaling = GImRiceUI.Style.FontSizeBase
+        Font = g.Font,
+        FontSizeBeforeScaling = g.Style.FontSizeBase,
+        FontSizeAfterScaling = g.Style.FontSizeBase
     }
 
     SetCurrentFont(font_stack_data.Font, font_stack_data.FontSizeBeforeScaling, 0)
 
-    GImRiceUI.FontStack:push_back(font_stack_data)
+    g.FontStack:push_back(font_stack_data)
 end
 
 --- void ImGui::UpdateFontsEndFrame
@@ -708,9 +718,11 @@ end
 
 --- bool ImGui::ItemHoverable
 local function ItemHoverable(id, bb)
-    local window = GImRiceUI.CurrentWindow
+    local g = GImRiceUI
 
-    if GImRiceUI.HoveredWindow ~= window then
+    local window = g.CurrentWindow
+
+    if g.HoveredWindow ~= window then
         return false
     end
 
@@ -718,7 +730,7 @@ local function ItemHoverable(id, bb)
         return false
     end
 
-    if GImRiceUI.HoveredID ~= 0 and GImRiceUI.HoveredID ~= id then
+    if g.HoveredID ~= 0 and g.HoveredID ~= id then
         return false
     end
 
@@ -758,11 +770,9 @@ local function IsMouseClicked(button)
 end
 
 local function ButtonBehavior(button_id, bb) -- TODO: Move to separate file!
-    if not GImRiceUI.CurrentWindow then
-        return false, false, false
-    end
+    local g = GImRiceUI
 
-    local io = GImRiceUI.IO
+    local io = g.IO
     local hovered = ItemHoverable(button_id, bb)
 
     local pressed = false
@@ -770,14 +780,14 @@ local function ButtonBehavior(button_id, bb) -- TODO: Move to separate file!
         if IsMouseClicked(1) then
             pressed = true
 
-            SetActiveID(button_id, GImRiceUI.CurrentWindow) -- FIXME: is this correct?
+            SetActiveID(button_id, g.CurrentWindow) -- FIXME: is this correct?
         end
     end
 
     local held = false
-    if GImRiceUI.ActiveID == button_id then
-        if GImRiceUI.ActiveIDIsJustActivated then
-            GImRiceUI.ActiveIDClickOffset = io.MousePos - bb.Min
+    if g.ActiveID == button_id then
+        if g.ActiveIDIsJustActivated then
+            g.ActiveIDClickOffset = io.MousePos - bb.Min
         end
 
         if IsMouseDown(1) then
@@ -1163,25 +1173,29 @@ end
 
 --- void ImGui::UpdateMouseMovingWindowEndFrame()
 local function UpdateMouseMovingWindowEndFrame()
-    if GImRiceUI.ActiveID ~= 0 or GImRiceUI.HoveredID ~= 0 then return end
+    local g = GImRiceUI
 
-    local hovered_window = GImRiceUI.HoveredWindow
+    if g.ActiveID ~= 0 or g.HoveredID ~= 0 then return end
 
-    if GImRiceUI.IO.MouseClicked[1] then
+    local hovered_window = g.HoveredWindow
+
+    if g.IO.MouseClicked[1] then
         if hovered_window then
             StartMouseMovingWindow(hovered_window)
         else -- TODO: investigate elseif (hovered_window == nil and g.NavWindow == nil) 
             FocusWindow(nil)
-            GImRiceUI.ActiveIDWindow = nil
+            g.ActiveIDWindow = nil
         end
     end
 end
 
 --- ImGui::FindWindowByID
 local function FindWindowByID(id)
-    if not GImRiceUI then return end
+    local g = GImRiceUI
 
-    return GImRiceUI.WindowsByID[id]
+    if not g then return end
+
+    return g.WindowsByID[id]
 end
 
 --- ImGui::FindWindowByName
@@ -1192,6 +1206,8 @@ end
 
 -- `p_open` will be set to false when the close button is pressed.
 local function Begin(name, p_open)
+    local g = GImRiceUI
+
     if name == nil or name == "" then return false end
     -- IM_ASSERT(g.FrameCountEnded != g.FrameCount)
 
@@ -1201,7 +1217,7 @@ local function Begin(name, p_open)
         window = CreateNewWindow(name)
     end
 
-    local current_frame = GImRiceUI.FrameCount
+    local current_frame = g.FrameCount
     local first_begin_of_the_frame = (window.LastFrameActive ~= current_frame)
     local window_just_activated_by_user = (window.LastFrameActive < (current_frame - 1))
 
@@ -1215,16 +1231,16 @@ local function Begin(name, p_open)
 
     local window_id = window.ID
 
-    GImRiceUI.CurrentWindow = window
+    g.CurrentWindow = window
 
     window.IDStack:clear_delete()
 
     PushID(window_id)
     window.MoveID = GetID("#MOVE") -- TODO: investigate
 
-    GImRiceUI.CurrentWindowStack:push_back(window)
+    g.CurrentWindowStack:push_back(window)
 
-    window.TitleBarHeight = GImRiceUI.FontSize + GImRiceUI.Style.FramePadding.y * 2
+    window.TitleBarHeight = g.FontSize + g.Style.FramePadding.y * 2
 
     if window.Collapsed then
         window.Size.y = window.TitleBarHeight
@@ -1240,11 +1256,11 @@ local function Begin(name, p_open)
     if not window.Collapsed then
         UpdateWindowManualResize(window, resize_grip_colors)
     end
-    local resize_grip_draw_size = ImTrunc(ImMax(GImRiceUI.FontSize * 1.10, GImRiceUI.Style.WindowRounding + 1.0 + GImRiceUI.FontSize * 0.2));
+    local resize_grip_draw_size = ImTrunc(ImMax(g.FontSize * 1.10, g.Style.WindowRounding + 1.0 + g.FontSize * 0.2));
 
     local title_bar_rect = TitleBarRect(window)
 
-    local title_bar_is_highlight = (GImRiceUI.NavWindow == window) -- TODO: proper cond, just simple highlight now
+    local title_bar_is_highlight = (g.NavWindow == window) -- TODO: proper cond, just simple highlight now
 
     RenderWindowDecorations(window, title_bar_rect, title_bar_is_highlight, resize_grip_colors, resize_grip_draw_size)
 
@@ -1254,13 +1270,15 @@ local function Begin(name, p_open)
 end
 
 local function End()
-    local window = GImRiceUI.CurrentWindow
+    local g = GImRiceUI
+
+    local window = g.CurrentWindow
     if not window then return end
 
     PopID()
-    GImRiceUI.CurrentWindowStack:pop_back()
+    g.CurrentWindowStack:pop_back()
 
-    SetCurrentWindow(GImRiceUI.CurrentWindowStack:peek())
+    SetCurrentWindow(g.CurrentWindowStack:peek())
 end
 
 local function FindHoveredWindowEx()
