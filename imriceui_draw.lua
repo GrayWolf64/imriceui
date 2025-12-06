@@ -2,6 +2,10 @@ local surface = surface
 local render  = render
 local draw    = draw
 
+--- If lower, the window title cross or arrow will look awful
+-- TODO: let client decide?
+RunConsoleCommand("mat_antialias", "8")
+
 local ImVector, ImVec2, ImVec4, ImVec1, ImRect = include("imriceui_internal.lua")
 
 local function ParseImGuiCol(str)

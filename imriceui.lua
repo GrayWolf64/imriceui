@@ -1,6 +1,6 @@
+--- ImGui for Garry's Mod written in pure Lua
+--
 ImRiceUI = ImRiceUI or {}
-
-local IsValid = IsValid
 
 local ipairs = ipairs
 local assert = assert
@@ -33,59 +33,8 @@ local ImResizeGripDef = {
     {CornerPos = ImVec2(0, 1), InnerDir = ImVec2( 1, -1)} -- Bottom left
 }
 
---- If lower, the window title cross or arrow will look awful
--- TODO: let client decide?
-RunConsoleCommand("mat_antialias", "8")
-
---- Notable: VGUIMousePressAllowed?
-local GDummyPanel = GDummyPanel or nil
-
-local function SetupDummyPanel()
-    if IsValid(GDummyPanel) then
-        GDummyPanel:Remove()
-        GDummyPanel = nil
-    end
-
-    GDummyPanel = vgui.Create("DFrame")
-
-    GDummyPanel:SetSizable(false)
-    GDummyPanel:SetTitle("")
-    GDummyPanel:SetPaintShadow(false)
-    GDummyPanel:ShowCloseButton(false)
-    GDummyPanel:SetDrawOnTop(true)
-    GDummyPanel:SetDraggable(false)
-    GDummyPanel:SetMouseInputEnabled(false)
-    GDummyPanel:SetKeyboardInputEnabled(false)
-
-    GDummyPanel:SetVisible(false)
-
-    GDummyPanel.Paint = function(self, w, h) -- FIXME: block derma modal panels
-        -- surface.SetDrawColor(0, 255, 0)
-        -- surface.DrawOutlinedRect(0, 0, w, h, 4)
-    end
-end
-
-local function AttachDummyPanel(x, y, size)
-    if not IsValid(GDummyPanel) then return end
-
-    GDummyPanel:SetPos(x, y)
-    GDummyPanel:SetSize(size.x, size.y)
-    GDummyPanel:SetVisible(true)
-    GDummyPanel:MakePopup()
-    GDummyPanel:SetKeyboardInputEnabled(false)
-end
-
-local function DetachDummyPanel()
-    if not IsValid(GDummyPanel) then return end
-
-    GDummyPanel:SetVisible(false)
-end
-
-local function SetMouseCursor(cursor_str)
-    if not IsValid(GDummyPanel) then return end
-
-    GDummyPanel:SetCursor(cursor_str)
-end
+local SetupDummyPanel, AttachDummyPanel, DetachDummyPanel, SetMouseCursor,
+    ImRiceUI_ImplGMOD_Init, ImRiceUI_ImplGMOD_Shutdown, ImRiceUI_ImplGMOD_NewFrame = include("imriceui_impl_gmod.lua")
 
 --- Use FNV1a, as one ImGui FIXME suggested
 local str_byte, bit_bxor, bit_band = string.byte, bit.bxor, bit.band
@@ -1335,7 +1284,7 @@ local function UpdateHoveredWindowAndCaptureFlags()
     --- Our window isn't actually a window. It doesn't "exist"
     -- need to block input to other game ui like Derma panels
     if io.WantCaptureMouse then
-        AttachDummyPanel(0, 0, io.DisplaySize)
+        AttachDummyPanel({x = 0, y = 0}, io.DisplaySize)
     else
         DetachDummyPanel()
     end
@@ -1442,32 +1391,9 @@ local function EndFrame()
     UpdateMouseMovingWindowEndFrame()
 end
 
-local ImRiceUI_ImplGMOD_Data = nil
-
-local function ImRiceUI_ImplGMOD_Init()
-    ImRiceUI_ImplGMOD_Data = {
-        Time = 0
-    }
-
-    hook.Add("PostGamemodeLoaded", "ImGDummyWindow", function()
-        SetupDummyPanel()
-    end)
-end
-
-local function ImRiceUI_ImplGMOD_Shutdown()
-    hook.Remove("PostGamemodeLoaded", "ImGDummyWindow")
-end
-
-local function ImRiceUI_ImplGMOD_NewFrame()
-    local io = GImRiceUI.IO
-    local bd = ImRiceUI_ImplGMOD_Data
-
-    io.DisplaySize = ImVec2(ScrW(), ScrH())
-
-    local current_time = SysTime()
-    io.DeltaTime = current_time - bd.Time
-    bd.Time = current_time
-end
+--- Exposure, have to be careful with this
+--
+function ImRiceUI:GetIO() return GImRiceUI.IO end
 
 --- void ImGui::Shutdown()
 
